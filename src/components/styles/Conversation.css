@@ -1,0 +1,66 @@
+.conversation {
+  display: block;
+  grid-template-columns: 40px 1fr max-content;
+  grid-gap: 10px;
+  color: #ddd;
+  font-size: 1.3rem;
+  border: 1px solid #ffffff;
+  padding: 20px 20px 20px 15px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.conversation.active,
+.conversation:hover {
+  background: #002c88;
+}
+
+.conversation:hover {
+  cursor: pointer;
+}
+
+.title-text {
+  font-weight: bold;
+  background-color: #dddeee;
+  color: rgba(44, 43, 43, 0.856);
+  padding: 5px;
+  white-space: nowrap;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  border-radius: 5px;
+  border-top: 1px solid black;
+}
+
+.last-updated {
+  color: #ddd;
+  white-space: nowrap;
+  font-style: italic;
+  margin-top: 5px;
+  font-size: 1rem;
+}
+
+.result {
+  display: block;
+  background-color: #eee;
+  border-radius: 5px;
+  border: 1px solid hsl(0, 0%, 0%);
+  text-align: left;
+  align-content: center;
+}
+
+.result-item {
+  border-bottom: 3px solid #0048aa;
+  border-top: 3px solid #0048aa;
+  grid-gap: 10px;
+  font-size: 1rem;
+  align-content: center;
+  margin: 8px;
+  padding: 12px;
+  font-style: italic;
+  font-weight: 800;
+  list-style-type: none;
+}
+
+.result-item:hover {
+  background: rgb(61, 122, 163);
+}

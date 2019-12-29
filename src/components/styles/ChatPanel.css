@@ -1,0 +1,27 @@
+#container {
+  display: grid;
+  grid:
+    "search-container chat-message-list" 71px
+    "conversation-list chat-message-list" 1fr
+    / 275px 1fr;
+  min-width: 1200px;
+  max-width: 1200px;
+  max-height: 800px;
+  width: 100%;
+  height: 95vh;
+  background: #fff;
+  border-radius: 10px;
+  align-content: center;
+}
+
+#logout {
+  border-radius: 5px;
+  border: 1px solid black;
+  background-color: #ccc;
+  font-size: 1.4rem;
+  color: #0048aa;
+  text-align: center;
+  width: 140px;
+  bottom: 0;
+  left: 0;
+}
