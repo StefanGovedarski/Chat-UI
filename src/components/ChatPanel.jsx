@@ -118,16 +118,26 @@ class ChatPanel extends Component {
 
   handleFileUpload(file) {
     axios
-      .post("http://localhost:55602/SaveFile", file, {
-        headers: {
-          Authorization: "bearer " + this.props.user.data.access_token
+      .post(
+        "http://localhost:55602/SaveFile?conversationId=".concat(
+          this.state.conversationSelected
+        ),
+        file,
+        {
+          headers: {
+            Authorization: "bearer " + this.props.user.data.access_token,
+            "Content-Type": "multipart/form-data",
+            type: "formData"
+          }
         }
-      })
+      )
       .then(response => {
         if (response.status === 200) {
-          console.log("whole response", response);
-          const resp = response.data;
-          console.log("file responde data", resp);
+          var messagesUpdated = this.state.messages;
+          messagesUpdated.push(response.data.message);
+          this.setState({
+            messages: messagesUpdated
+          });
         }
       })
       .catch(error => {

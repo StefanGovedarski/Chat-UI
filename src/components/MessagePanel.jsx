@@ -30,17 +30,9 @@ class MessagePanel extends Component {
     if (file) {
       let data = new FormData();
       data.append("file", file);
-      console.log("data", data.value);
-      this.props.handleFileUpload(file);
-      // axios.post('/files', data)...
-      // on 200 - method in chatpanel that gets messages for the history, add to messages content: file.name isAttachment: true
+      this.props.handleFileUpload(data);
     }
 
-    /*  this.props.handleMessageSent(
-      event.target.files[0].name,
-      true,
-      event.target.files[0]
-    ); */
     this.setState({
       selectedFile: event.target.files[0]
     });
