@@ -23,7 +23,7 @@ class ChatPanel extends Component {
           IsAttachment: false
         }
       ],
-      targetUsername: "Leo",
+      targetUsername: "",
       targetUserLoggedInStatus: false,
       isFullChatHistory: true
     };
@@ -34,6 +34,7 @@ class ChatPanel extends Component {
     this.handleConversationChange = this.handleConversationChange.bind(this);
     this.handleMessageSent = this.handleMessageSent.bind(this);
     this.handleLoadHistory = this.handleLoadHistory.bind(this);
+    this.handleFileUpload = this.handleFileUpload.bind(this);
   }
 
   componentDidMount() {
@@ -115,8 +116,26 @@ class ChatPanel extends Component {
     });
   }
 
+  handleFileUpload(file) {
+    axios
+      .post("http://localhost:55602/SaveFile", file, {
+        headers: {
+          Authorization: "bearer " + this.props.user.data.access_token
+        }
+      })
+      .then(response => {
+        if (response.status === 200) {
+          console.log("whole response", response);
+          const resp = response.data;
+          console.log("file responde data", resp);
+        }
+      })
+      .catch(error => {
+        console.log("error " + error);
+      });
+  }
+
   saveMessage(newMessage) {
-    console.log("saveMEssage", newMessage);
     if (this.state.targetUserLoggedInStatus) {
       // Open SignalR websocket hub
     } else {
@@ -190,6 +209,7 @@ class ChatPanel extends Component {
           conversationSelected={this.state.conversationSelected}
           isFullChatHistory={this.state.isFullChatHistory}
           handleLoadHistory={this.handleLoadHistory}
+          handleFileUpload={this.handleFileUpload}
         />
         <button id="logout" onClick={() => this.handleLogoutClick()}>
           Logout
