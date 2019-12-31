@@ -42,7 +42,7 @@ class Login extends Component {
         }
       })
       .catch(error => {
-        console.log("login errors", error);
+        console.log("error", error);
       });
 
     event.preventDefault();

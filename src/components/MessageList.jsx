@@ -33,8 +33,28 @@ class MessageList extends Component {
     });
   }
 
-  toggleDownload(messageId) {
+  toggleDownload(messageId, name) {
     console.log(messageId);
+    axios
+      .get("http://localhost:55602/GetFile?messageId=".concat(messageId), {
+        responseType: "blob",
+        headers: {
+          Authorization: "bearer " + this.props.user.data.access_token
+        }
+      })
+      .then(response => {
+        const blob = new Blob([response.data]);
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.id = "dwnld";
+        document.body.appendChild(a);
+        document.getElementById("dwnld").click(function(e) {
+          e.preventDefault();
+        });
+        a.href = url;
+        a.download = name;
+        a.click();
+      });
   }
 
   render() {
@@ -68,7 +88,10 @@ class MessageList extends Component {
                       src="/downArrow.png"
                       alt="Download"
                       id="btnDownload"
-                      onClick={this.toggleDownload(message.Content)}
+                      title="Download file"
+                      onClick={() => {
+                        this.toggleDownload(message.Id, message.Content);
+                      }}
                     ></img>
                     <i>{message.Content}</i>
                   </span>
@@ -78,6 +101,15 @@ class MessageList extends Component {
               </div>
               <div className="message-time">
                 {moment(message.Time).format("HH:mm:ss")}
+                <img
+                  src="/trashBin.png"
+                  alt="Delete"
+                  id="btnDelete"
+                  title="Delete message"
+                  onClick={() => {
+                    this.props.handleDeleteMessage(message.Id);
+                  }}
+                ></img>
               </div>
             </div>
           </div>

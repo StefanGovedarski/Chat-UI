@@ -67,6 +67,8 @@ class MessagePanel extends Component {
           messages={this.props.messages}
           isFullChatHistory={this.props.isFullChatHistory}
           handleLoadHistory={this.props.handleLoadHistory}
+          handleDeleteMessage={this.props.handleDeleteMessage}
+          user={this.props.user}
         />
         <div id="message-form">
           <form onSubmit={this.handleSubmit} id="chat-form" autoComplete="off">

@@ -66,6 +66,14 @@
   border-radius: 30px;
 }
 
+#btnDelete {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  margin-left: 3px;
+  border: 2px solid white;
+}
+
 #btnSend {
   height: 40px;
   width: 80px;

@@ -5,11 +5,14 @@ import ConversationList from "./ConversationList";
 import MessagePanel from "./MessagePanel";
 import axios from "axios";
 import moment from "moment";
+import * as signalr from "signalr-no-jquery";
+// import * as $ from "jquery";
 
 class ChatPanel extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      useSignalR: false,
       searchResults: false,
       conversationSelected: 0,
       conversations: [],
@@ -25,7 +28,8 @@ class ChatPanel extends Component {
       ],
       targetUsername: "",
       targetUserLoggedInStatus: false,
-      isFullChatHistory: true
+      isFullChatHistory: true,
+      chatHub: null
     };
 
     this.toggleSearchOn = this.toggleSearchOn.bind(this);
@@ -35,10 +39,37 @@ class ChatPanel extends Component {
     this.handleMessageSent = this.handleMessageSent.bind(this);
     this.handleLoadHistory = this.handleLoadHistory.bind(this);
     this.handleFileUpload = this.handleFileUpload.bind(this);
+    this.handleDeleteMessage = this.handleDeleteMessage.bind(this);
   }
 
   componentDidMount() {
     this.getConversationHistory();
+
+    const connection = signalr.hubConnection(
+      "http://localhost:55602/signalr/ChatHub"
+    );
+    const hubProxy = connection.createHubProxy("ChatHub");
+    // connect
+    connection
+      .start({ jsonp: true })
+      .done(() => console.log("SignalR Connected..."))
+      .fail(error => console.log("Error: ", error));
+
+    this.setState({
+      chatHub: hubProxy
+    });
+  }
+
+  handleDeleteMessage(messageId) {
+    console.log("TUKA IDWA LI");
+    axios.get(
+      "http://localhost:55602/DeleteMessage?messageId=".concat(messageId),
+      {
+        headers: {
+          Authorization: "bearer " + this.props.user.data.access_token
+        }
+      }
+    );
   }
 
   handleLoadHistory(count) {
@@ -53,8 +84,11 @@ class ChatPanel extends Component {
         }
       })
       .then(response => {
-        if (response.status === 200)
-          this.setState({ conversations: response.data });
+        if (response.status === 200) {
+          this.setState({
+            conversations: response.data
+          });
+        }
       })
       .catch(error => {
         console.log("error " + error);
@@ -84,6 +118,7 @@ class ChatPanel extends Component {
             targetUsername: resp.TargetUsername,
             targetUserLoggedInStatus: resp.TargetUserOnline,
             isFullChatHistory: resp.IsFullChatHistory,
+            useSignalR: resp.TargetUserOnline,
             messages: resp.Messages
           });
         }
@@ -97,7 +132,6 @@ class ChatPanel extends Component {
     if (this.state.conversationSelected === 0) {
       return;
     }
-    console.log("ATTACHMEENT", attachment);
     var date = moment();
     var messagesUpdated = this.state.messages;
     var newMessage = {
@@ -116,38 +150,15 @@ class ChatPanel extends Component {
     });
   }
 
-  handleFileUpload(file) {
-    axios
-      .post(
-        "http://localhost:55602/SaveFile?conversationId=".concat(
-          this.state.conversationSelected
-        ),
-        file,
-        {
-          headers: {
-            Authorization: "bearer " + this.props.user.data.access_token,
-            "Content-Type": "multipart/form-data",
-            type: "formData"
-          }
-        }
-      )
-      .then(response => {
-        if (response.status === 200) {
-          var messagesUpdated = this.state.messages;
-          messagesUpdated.push(response.data.message);
-          this.setState({
-            messages: messagesUpdated
-          });
-        }
-      })
-      .catch(error => {
-        console.log("error " + error);
-      });
-  }
-
   saveMessage(newMessage) {
-    if (this.state.targetUserLoggedInStatus) {
-      // Open SignalR websocket hub
+    var messagesUpdated = this.state.messages;
+    if (this.state.useSignalR) {
+      // Send via webSocket
+      this.state.chatHub.invoke("AddMessage", newMessage);
+
+      this.state.chatHub.on("AddMessage", newMessage => {
+        messagesUpdated.push(newMessage);
+      });
     } else {
       // Persist message for offline user to see in a later time
       axios.post("http://localhost:55602/AddMessage", newMessage, {
@@ -156,6 +167,49 @@ class ChatPanel extends Component {
         }
       });
     }
+  }
+
+  handleFileUpload(file) {
+    var messagesUpdated = this.state.messages;
+    if (this.state.useSignalR) {
+      // Send via webSocket
+      this.state.chatHub.invoke(
+        "SendFile",
+        file,
+        this.props.user.user,
+        this.state.conversationSelected
+      );
+
+      this.state.chatHub.on("SendFile", newMessage => {
+        messagesUpdated.push(newMessage);
+      });
+    } else {
+      axios
+        .post(
+          "http://localhost:55602/SaveFile?conversationId=".concat(
+            this.state.conversationSelected
+          ),
+          file,
+          {
+            headers: {
+              Authorization: "bearer " + this.props.user.data.access_token,
+              "Content-Type": "multipart/form-data",
+              type: "formData"
+            }
+          }
+        )
+        .then(response => {
+          if (response.status === 200) {
+            messagesUpdated.push(response.data.message);
+          }
+        })
+        .catch(error => {
+          console.log("error " + error);
+        });
+    }
+    this.setState({
+      messages: messagesUpdated
+    });
   }
 
   handleLogoutClick() {
@@ -220,6 +274,7 @@ class ChatPanel extends Component {
           isFullChatHistory={this.state.isFullChatHistory}
           handleLoadHistory={this.handleLoadHistory}
           handleFileUpload={this.handleFileUpload}
+          handleDeleteMessage={this.handleDeleteMessage}
         />
         <button id="logout" onClick={() => this.handleLogoutClick()}>
           Logout

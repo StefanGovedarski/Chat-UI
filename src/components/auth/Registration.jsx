@@ -34,10 +34,9 @@ class Registration extends Component {
             data: response.data
           });
         }
-        console.log("registration response", response);
       })
       .catch(error => {
-        console.log("registraiton errors", error);
+        console.log("error", error);
       });
 
     event.preventDefault();
