@@ -107,7 +107,7 @@ class MessageList extends Component {
                   id="btnDelete"
                   title="Delete message"
                   onClick={() => {
-                    this.props.handleDeleteMessage(message.Id);
+                    this.props.handleDeleteMessage(message);
                   }}
                 ></img>
               </div>

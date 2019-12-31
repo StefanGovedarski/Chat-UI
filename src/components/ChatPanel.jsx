@@ -60,16 +60,21 @@ class ChatPanel extends Component {
     });
   }
 
-  handleDeleteMessage(messageId) {
-    console.log("TUKA IDWA LI");
+  handleDeleteMessage(message) {
     axios.get(
-      "http://localhost:55602/DeleteMessage?messageId=".concat(messageId),
+      "http://localhost:55602/DeleteMessage?messageId=".concat(message.Id),
       {
         headers: {
           Authorization: "bearer " + this.props.user.data.access_token
         }
       }
     );
+    var currMesagges = this.state.messages;
+    currMesagges.pop(message);
+
+    this.setState({
+      mesages: currMesagges
+    });
   }
 
   handleLoadHistory(count) {
