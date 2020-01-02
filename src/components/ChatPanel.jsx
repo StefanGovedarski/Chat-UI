@@ -21,13 +21,15 @@ class ChatPanel extends Component {
           ConversationId: 0,
           Sender: this.props.user.user,
           Date: moment(),
-          Content: "Select a user to chat with from the conversation list! :)",
+          Content:
+            "Hi " +
+            this.props.user.user +
+            ".Select a user to chat with from the conversation list! :)",
           IsMine: true,
           IsAttachment: false
         }
       ],
       targetUsername: "",
-      targetUserLoggedInStatus: false,
       isFullChatHistory: true,
       chatHub: null
     };
@@ -55,8 +57,24 @@ class ChatPanel extends Component {
       .done(() => console.log("SignalR Connected..."))
       .fail(error => console.log("Error: ", error));
 
+    hubProxy.on("AddMessage", newMessage => {
+      this.showMessage(newMessage);
+    });
+
+    hubProxy.on("SendFile", newMessage => {
+      this.showMessage(newMessage);
+    });
+
     this.setState({
       chatHub: hubProxy
+    });
+  }
+
+  showMessage(message) {
+    var messagesUpdated = this.state.messages;
+    messagesUpdated.push(message);
+    this.setState({
+      messages: messagesUpdated
     });
   }
 
@@ -121,7 +139,6 @@ class ChatPanel extends Component {
           this.setState({
             conversationSelected: resp.Conversation.Id,
             targetUsername: resp.TargetUsername,
-            targetUserLoggedInStatus: resp.TargetUserOnline,
             isFullChatHistory: resp.IsFullChatHistory,
             useSignalR: resp.TargetUserOnline,
             messages: resp.Messages
@@ -138,7 +155,6 @@ class ChatPanel extends Component {
       return;
     }
     var date = moment();
-    var messagesUpdated = this.state.messages;
     var newMessage = {
       ConversationId: this.state.conversationSelected,
       Sender: this.props.user.user,
@@ -148,22 +164,18 @@ class ChatPanel extends Component {
       IsAttachment: isAttachment,
       Attachment: attachment
     };
-    messagesUpdated.push(newMessage);
     this.saveMessage(newMessage);
-    this.setState({
-      messages: messagesUpdated
-    });
+
+    if (!this.state.useSignalR) {
+      console.log("call show message");
+      this.showMessage(newMessage);
+    }
   }
 
   saveMessage(newMessage) {
-    var messagesUpdated = this.state.messages;
     if (this.state.useSignalR) {
       // Send via webSocket
       this.state.chatHub.invoke("AddMessage", newMessage);
-
-      this.state.chatHub.on("AddMessage", newMessage => {
-        messagesUpdated.push(newMessage);
-      });
     } else {
       // Persist message for offline user to see in a later time
       axios.post("http://localhost:55602/AddMessage", newMessage, {
@@ -175,7 +187,6 @@ class ChatPanel extends Component {
   }
 
   handleFileUpload(file) {
-    var messagesUpdated = this.state.messages;
     if (this.state.useSignalR) {
       // Send via webSocket
       this.state.chatHub.invoke(
@@ -184,10 +195,6 @@ class ChatPanel extends Component {
         this.props.user.user,
         this.state.conversationSelected
       );
-
-      this.state.chatHub.on("SendFile", newMessage => {
-        messagesUpdated.push(newMessage);
-      });
     } else {
       axios
         .post(
@@ -205,16 +212,13 @@ class ChatPanel extends Component {
         )
         .then(response => {
           if (response.status === 200) {
-            messagesUpdated.push(response.data.message);
+            this.showMessage(response.data.message);
           }
         })
         .catch(error => {
           console.log("error " + error);
         });
     }
-    this.setState({
-      messages: messagesUpdated
-    });
   }
 
   handleLogoutClick() {

@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Switch, Route } from "react-router-dom";
 import Home from "./Home";
+import axios from "axios";
 import ChatPanel from "./ChatPanel";
 
 export default class App extends React.Component {
@@ -23,6 +24,31 @@ export default class App extends React.Component {
   handleLogout() {
     this.setState({
       user: {}
+    });
+  }
+
+  userLogout() {
+    const URL = "http://localhost:55602/Logout";
+    axios.get(
+      URL,
+      {
+        headers: {
+          Authorization: "bearer " + this.state.user.data.access_token
+        }
+      },
+      { crossdomain: true }
+    );
+  }
+
+  componentDidMount() {
+    window.addEventListener("beforeunload", () => {
+      this.userLogout();
+    });
+  }
+
+  componentWillUnmount() {
+    window.addEventListener("beforeunload", () => {
+      this.userLogout();
     });
   }
 
