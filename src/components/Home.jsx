@@ -17,7 +17,6 @@ class Home extends Component {
   }
 
   handleSuccessfullAuth(data) {
-    console.log("DATA", data);
     this.props.handleLogin(data);
     this.props.history.push("/chatpanel");
   }

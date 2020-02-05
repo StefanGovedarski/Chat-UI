@@ -74,7 +74,9 @@ class MessageList extends Component {
             key={i}
             className={
               "message-row " +
-              (message.IsMine ? "you-message" : "other-message")
+              (message.Sender === this.props.user.user
+                ? "you-message"
+                : "other-message")
             }
           >
             <div className="message-content">
@@ -101,15 +103,19 @@ class MessageList extends Component {
               </div>
               <div className="message-time">
                 {moment(message.Time).format("HH:mm:ss")}
-                <img
-                  src="/trashBin.png"
-                  alt="Delete"
-                  id="btnDelete"
-                  title="Delete message"
-                  onClick={() => {
-                    this.props.handleDeleteMessage(message);
-                  }}
-                ></img>
+                {message.Sender === this.props.user.user ? (
+                  <img
+                    src="/trashBin.png"
+                    alt="Delete"
+                    id="btnDelete"
+                    title="Delete message"
+                    onClick={() => {
+                      this.props.handleDeleteMessage(message);
+                    }}
+                  ></img>
+                ) : (
+                  <div></div>
+                )}
               </div>
             </div>
           </div>

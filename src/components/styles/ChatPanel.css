@@ -4,8 +4,9 @@
     "search-container chat-message-list" 71px
     "conversation-list chat-message-list" 1fr
     / 275px 1fr;
-  min-width: 1200px;
+  min-width: 900px;
   max-width: 1200px;
+  min-height: 600px;
   max-height: 800px;
   width: 100%;
   height: 95vh;

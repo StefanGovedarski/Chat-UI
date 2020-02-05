@@ -46,36 +46,72 @@ class ChatPanel extends Component {
 
   componentDidMount() {
     this.getConversationHistory();
+    const that = this;
 
-    const connection = signalr.hubConnection(
-      "http://localhost:55602/signalr/ChatHub"
-    );
-    const hubProxy = connection.createHubProxy("ChatHub");
+    const connection = signalr.hubConnection("http://localhost:55602/signalr", {
+      useDefaultPath: false
+    });
+    const hubProxy = connection.createHubProxy("chatHub");
+
+    hubProxy.on("notifyConnected", function() {
+      console.log("User Registered for SignalR");
+    });
+
+    hubProxy.on("addedMessage", function(newMessage) {
+      that.showMessage(newMessage);
+    });
+
+    hubProxy.on("savedFile", function(newMessage) {
+      that.showMessage(newMessage);
+    });
+
+    hubProxy.on("removedMessage", function(message) {
+      that.removeMessage(message);
+    });
+
     // connect
     connection
-      .start({ jsonp: true })
-      .done(() => console.log("SignalR Connected..."))
+      .start({ transport: "webSockets" })
+      .done(() => {
+        console.log("SignalR Connected");
+        hubProxy.invoke("Connect", this.props.user.user).done();
+      })
       .fail(error => console.log("Error: ", error));
-
-    hubProxy.on("AddMessage", newMessage => {
-      this.showMessage(newMessage);
-    });
-
-    hubProxy.on("SendFile", newMessage => {
-      this.showMessage(newMessage);
-    });
 
     this.setState({
       chatHub: hubProxy
     });
   }
 
+  componentDidUpdate() {
+    if (typeof this.props.user.data !== "undefined") {
+      this.getConversationHistory();
+    } else {
+      this.props.history.push("/");
+    }
+  }
+
   showMessage(message) {
-    var messagesUpdated = this.state.messages;
-    messagesUpdated.push(message);
-    this.setState({
-      messages: messagesUpdated
-    });
+    if (message.ConversationId === this.state.conversationSelected) {
+      var messagesUpdated = this.state.messages;
+      messagesUpdated.push(message);
+      this.setState({
+        messages: messagesUpdated
+      });
+    }
+  }
+
+  removeMessage(message) {
+    if (message.ConversationId === this.state.conversationSelected) {
+      var currMesagges = this.state.messages;
+      var newMessages = currMesagges.filter(function(obj) {
+        return obj.Id !== message.Id;
+      });
+
+      this.setState({
+        messages: newMessages
+      });
+    }
   }
 
   handleDeleteMessage(message) {
@@ -87,12 +123,11 @@ class ChatPanel extends Component {
         }
       }
     );
-    var currMesagges = this.state.messages;
-    currMesagges.pop(message);
-
-    this.setState({
-      mesages: currMesagges
-    });
+    if (this.state.useSignalR) {
+      this.state.chatHub.invoke("RemoveMessage", message);
+    } else {
+      this.removeMessage(message);
+    }
   }
 
   handleLoadHistory(count) {
@@ -167,7 +202,6 @@ class ChatPanel extends Component {
     this.saveMessage(newMessage);
 
     if (!this.state.useSignalR) {
-      console.log("call show message");
       this.showMessage(newMessage);
     }
   }
@@ -187,38 +221,33 @@ class ChatPanel extends Component {
   }
 
   handleFileUpload(file) {
-    if (this.state.useSignalR) {
-      // Send via webSocket
-      this.state.chatHub.invoke(
-        "SendFile",
+    axios
+      .post(
+        "http://localhost:55602/SaveFile?conversationId=".concat(
+          this.state.conversationSelected
+        ),
         file,
-        this.props.user.user,
-        this.state.conversationSelected
-      );
-    } else {
-      axios
-        .post(
-          "http://localhost:55602/SaveFile?conversationId=".concat(
-            this.state.conversationSelected
-          ),
-          file,
-          {
-            headers: {
-              Authorization: "bearer " + this.props.user.data.access_token,
-              "Content-Type": "multipart/form-data",
-              type: "formData"
-            }
+        {
+          headers: {
+            Authorization: "bearer " + this.props.user.data.access_token,
+            "Content-Type": "multipart/form-data",
+            type: "formData"
           }
-        )
-        .then(response => {
-          if (response.status === 200) {
+        }
+      )
+      .then(response => {
+        if (response.status === 200) {
+          if (this.state.useSignalR) {
+            // Send via webSocket
+            this.state.chatHub.invoke("SaveFile", response.data.message);
+          } else {
             this.showMessage(response.data.message);
           }
-        })
-        .catch(error => {
-          console.log("error " + error);
-        });
-    }
+        }
+      })
+      .catch(error => {
+        console.log("error " + error);
+      });
   }
 
   handleLogoutClick() {
@@ -235,6 +264,7 @@ class ChatPanel extends Component {
         { crossdomain: true }
       )
       .then(response => {
+        this.state.chatHub.invoke("Disconnect", this.props.user.user);
         this.props.handleLogout();
         this.props.history.push("/");
       })
